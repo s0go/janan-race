@@ -22,31 +22,43 @@ canvas { width: 100%; height: 100%; display: block; }
 }
 .p1-info { color: #38bdf8; }
 .p2-info { color: #f43f5e; }
-#menu { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(4px); background: rgba(0,0,0,0.5); }
+#menu { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(6px); background: rgba(0,0,0,0.6); }
 .panel { 
-    width: min(440px, 90%); padding: 30px; background: rgba(15, 23, 42, 0.95); 
+    width: min(500px, 92%); padding: 30px; background: rgba(15, 23, 42, 0.95); 
     border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; color: white; text-align: center;
     box-shadow: 0 15px 35px rgba(0,0,0,0.5);
 }
-.panel h1 { font-size: 28px; font-weight: 700; margin: 0 0 10px; color: #facc15; letter-spacing: -1px; }
+.panel h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; color: #facc15; letter-spacing: -1px; }
 .panel p { font-size: 14px; color: #94a3b8; margin: 0 0 20px; line-height: 1.5; }
 button { 
     width: 100%; border: none; padding: 14px; border-radius: 12px; background: #facc15; color: #0f172a; 
     font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(250,204,21,0.3);
 }
 button:hover { background: #fde047; transform: translateY(-1px); }
-.controls-guide { display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 13px; color: #cbd5e1; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; text-align: left; }
-.controls-guide div b { display: block; margin-bottom: 4px; font-size: 14px; color: #facc15; }
+
+/* 플레이어 컨트롤 선택 가이드 스타일 */
+.controls-guide { display: flex; gap: 12px; margin-bottom: 20px; text-align: center; }
+.p1-card { 
+    flex: 1; padding: 14px; border-radius: 16px; background: rgba(56, 189, 248, 0.15); 
+    border: 2px solid #38bdf8; color: #e0f2fe; 
+}
+.p2-card { 
+    flex: 1; padding: 14px; border-radius: 16px; background: rgba(244, 63, 94, 0.15); 
+    border: 2px solid #f43f5e; color: #ffe4e6; 
+}
+.card-title { font-weight: 800; font-size: 16px; margin-bottom: 6px; }
+.p1-card .card-title { color: #38bdf8; }
+.p2-card .card-title { color: #f43f5e; }
+.key-badge { display: inline-block; padding: 4px 8px; background: rgba(0,0,0,0.4); border-radius: 6px; font-weight: 700; font-size: 13px; margin-top: 4px; }
 </style>
 </head>
 <body>
 
 <div id="gameBox">
-    <!-- 캔버스 해상도를 1200x675로 확장하여 맵을 훨씬 넓게 구성 -->
     <canvas id="game" width="1200" height="675"></canvas>
     <div id="uiTop">
-        <div class="p1-info">P1 LAP: <span id="p1Lap">1</span>/3</div>
-        <div class="p2-info">P2 LAP: <span id="p2Lap">1</span>/3</div>
+        <div class="p1-info">P1 (파랑) LAP: <span id="p1Lap">1</span>/3</div>
+        <div class="p2-info">P2 (빨강) LAP: <span id="p2Lap">1</span>/3</div>
     </div>
     <div id="menu"></div>
 </div>
@@ -60,9 +72,8 @@ const menu = document.getElementById("menu");
 
 let state = "START";
 
-// 차량 데이터 (stunUntil 추가: 해당 시간까지 조작 불능)
-let p1 = { x: 180, y: 220, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#38bdf8", name: "PLAYER 1", stunUntil: 0 };
-let p2 = { x: 180, y: 450, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#f43f5e", name: "PLAYER 2", stunUntil: 0 };
+let p1 = { x: 180, y: 220, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#38bdf8", name: "PLAYER 1 (파랑)", stunUntil: 0 };
+let p2 = { x: 180, y: 450, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#f43f5e", name: "PLAYER 2 (빨강)", stunUntil: 0 };
 
 let keys = {};
 window.addEventListener("keydown", e => { keys[e.code] = true; });
@@ -74,11 +85,21 @@ function showMenu(winnerName = "") {
         menu.innerHTML = `
             <div class="panel">
                 <h1>🏎️ JANGAN 2P CIRCUIT</h1>
-                <p>넓어진 서킷에서 질주하세요!<br><b>벽 충돌 시 1초, 차량 충돌 시 1.5초 정지!</b></p>
+                <p>벽에 박으면 1초, 서로 박으면 1.5초 기절(노랑 ⚡)!<br>각자 조종할 플레이어를 확인하세요.</p>
+                
                 <div class="controls-guide">
-                    <div><b>P1 (파랑)</b>W A S D 키<br>(상하좌우)</div>
-                    <div><b>P2 (빨강)</b>방향키 (↑ ↓ ← →)<br>(상하좌우)</div>
+                    <div class="p1-card">
+                        <div class="card-title">🟦 P1 (파랑)</div>
+                        <div class="key-badge">W A S D</div>
+                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">상 / 좌 / 하 / 우</div>
+                    </div>
+                    <div class="p2-card">
+                        <div class="card-title">🟥 P2 (빨강)</div>
+                        <div class="key-badge">↑ ← ↓ →</div>
+                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">방향키 (상하좌우)</div>
+                    </div>
                 </div>
+
                 <button onclick="startGame()">레이스 시작!</button>
             </div>
         `;
@@ -100,88 +121,78 @@ function startGame() {
     state = "PLAYING";
 }
 
+function triggerStun(car, duration, bounceX, bounceY) {
+    let now = Date.now();
+    car.stunUntil = now + duration;
+    car.vx = 0; 
+    car.vy = 0;
+    // 끼임 방지를 위해 부딪힌 방향 반대로 튕겨냄
+    car.x += bounceX;
+    car.y += bounceY;
+}
+
 function update() {
     if(state !== "PLAYING") return;
 
     let now = Date.now();
 
-    // --- P1 조작 (기절 상태 아닐 때만 가능) ---
+    // --- P1 조작 ---
     if(now > p1.stunUntil) {
         if(keys["KeyW"]) p1.vy -= p1.speed;
         if(keys["KeyS"]) p1.vy += p1.speed;
         if(keys["KeyA"]) p1.vx -= p1.speed;
         if(keys["KeyD"]) p1.vx += p1.speed;
-    } else {
-        p1.vx = 0; p1.vy = 0; // 정지
     }
 
-    // --- P2 조작 (기절 상태 아닐 때만 가능) ---
+    // --- P2 조작 ---
     if(now > p2.stunUntil) {
         if(keys["ArrowUp"]) p2.vy -= p2.speed;
         if(keys["ArrowDown"]) p2.vy += p2.speed;
         if(keys["ArrowLeft"]) p2.vx -= p2.speed;
         if(keys["ArrowRight"]) p2.vx += p2.speed;
-    } else {
-        p2.vx = 0; p2.vy = 0; // 정지
     }
 
-    // 마찰력 적용
+    // 마찰력 및 위치 이동
     p1.vx *= p1.friction; p1.vy *= p1.friction;
     p2.vx *= p2.friction; p2.vy *= p2.friction;
-
-    // 최대 속도 클램핑
-    let p1Mag = Math.hypot(p1.vx, p1.vy);
-    if(p1Mag > p1.maxSpeed) { p1.vx = (p1.vx / p1Mag) * p1.maxSpeed; p1.vy = (p1.vy / p1Mag) * p1.maxSpeed; }
-    let p2Mag = Math.hypot(p2.vx, p2.vy);
-    if(p2Mag > p2.maxSpeed) { p2.vx = (p2.vx / p2Mag) * p2.maxSpeed; p2.vy = (p2.vy / p2Mag) * p2.maxSpeed; }
 
     p1.x += p1.vx; p1.y += p1.vy;
     p2.x += p2.vx; p2.y += p2.vy;
 
-    // --- 1. 외곽 및 중앙 섬 벽 충돌 체크 (1초 정지 = 1000ms) ---
-    const margin = 35;
-    const innerRect = { x: 300, y: 150, w: 600, h: 375 }; // 중앙 구조물 크기 확대
+    // --- 1. 외곽 벽 충돌 (1초 기절 + 반사 튕김) ---
+    const minX = 40, maxX = 1160, minY = 80, maxY = 635;
+    
+    [p1, p2].forEach(car => {
+        if(car.x < minX) triggerStun(car, 1000, 15, 0);
+        if(car.x > maxX) triggerStun(car, 1000, -15, 0);
+        if(car.y < minY) triggerStun(car, 1000, 0, 15);
+        if(car.y > maxY) triggerStun(car, 1000, 0, -15);
+    });
 
-    // P1 외곽 벽 충돌
-    if(p1.x < margin || p1.x > 1200 - margin || p1.y < margin + 40 || p1.y > 675 - margin) {
-        p1.stunUntil = now + 1000;
-        p1.x = Math.max(margin, Math.min(1200 - margin, p1.x));
-        p1.y = Math.max(margin + 40, Math.min(675 - margin, p1.y));
-        p1.vx = 0; p1.vy = 0;
-    }
-    // P1 중앙 섬 충돌
-    if(p1.x > innerRect.x && p1.x < innerRect.x + innerRect.w && p1.y > innerRect.y && p1.y < innerRect.y + innerRect.h) {
-        p1.stunUntil = now + 1000;
-        p1.vx = 0; p1.vy = 0;
-        p1.x -= p1.vx * 2; p1.y -= p1.vy * 2; // 조금 밀쳐냄
-    }
+    // --- 2. 중앙 섬 충돌 (1초 기절 + 밀쳐내기 튕김) ---
+    const inner = { x: 300, y: 150, w: 600, h: 375 };
+    [p1, p2].forEach(car => {
+        if(car.x > inner.x && car.x < inner.x + inner.w && car.y > inner.y && car.y < inner.y + inner.h) {
+            // 어느 쪽으로 들어왔는지 계산해서 튕겨냄
+            let dxLeft = Math.abs(car.x - inner.x);
+            let dxRight = Math.abs(car.x - (inner.x + inner.w));
+            let dyTop = Math.abs(car.y - inner.y);
+            let dyBottom = Math.abs(car.y - (inner.y + inner.h));
+            let minDist = Math.min(dxLeft, dxRight, dyTop, dyBottom);
 
-    // P2 외곽 벽 충돌
-    if(p2.x < margin || p2.x > 1200 - margin || p2.y < margin + 40 || p2.y > 675 - margin) {
-        p2.stunUntil = now + 1000;
-        p2.x = Math.max(margin, Math.min(1200 - margin, p2.x));
-        p2.y = Math.max(margin + 40, Math.min(675 - margin, p2.y));
-        p2.vx = 0; p2.vy = 0;
-    }
-    // P2 중앙 섬 충돌
-    if(p2.x > innerRect.x && p2.x < innerRect.x + innerRect.w && p2.y > innerRect.y && p2.y < innerRect.y + innerRect.h) {
-        p2.stunUntil = now + 1000;
-        p2.vx = 0; p2.vy = 0;
-        p2.x -= p2.vx * 2; p2.y -= p2.vy * 2;
-    }
+            if(minDist === dxLeft) triggerStun(car, 1000, -15, 0);
+            else if(minDist === dxRight) triggerStun(car, 1000, 15, 0);
+            else if(minDist === dyTop) triggerStun(car, 1000, 0, -15);
+            else triggerStun(car, 1000, 0, 15);
+        }
+    });
 
-    // --- 2. 플레이어끼리 충돌 체크 (1.5초 정지 = 1500ms) ---
+    // --- 3. 서로 충돌 (1.5초 기절 + 밀쳐내기) ---
     let distBetween = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-    if(distBetween < 40) { // 차량 반지름 감지 범위
-        p1.stunUntil = now + 1500;
-        p2.stunUntil = now + 1500;
-        p1.vx = 0; p1.vy = 0;
-        p2.vx = 0; p2.vy = 0;
-        
-        // 서로 살짝 튕겨나가게 처리해서 겹침 방지
+    if(distBetween < 42) {
         let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        p1.x -= Math.cos(angle) * 10; p1.y -= Math.sin(angle) * 10;
-        p2.x += Math.cos(angle) * 10; p2.y += Math.sin(angle) * 10;
+        triggerStun(p1, 1500, -Math.cos(angle) * 15, -Math.sin(angle) * 15);
+        triggerStun(p2, 1500, Math.cos(angle) * 15, Math.sin(angle) * 15);
     }
 
     p1LapEl.textContent = p1.lap;
@@ -203,14 +214,47 @@ function checkLaps() {
     if(p2Passed && p2.x < 250) { p2.lap++; p2Passed = false; }
 }
 
+function drawCar(car) {
+    let now = Date.now();
+    let isStunned = now < car.stunUntil;
+
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    let angle = Math.atan2(car.vy, car.vx);
+    if(Math.hypot(car.vx, car.vy) < 0.1) angle = 0;
+    ctx.rotate(angle);
+
+    // 차 본체
+    ctx.fillStyle = car.color;
+    ctx.beginPath();
+    ctx.roundRect(-24, -14, 48, 28, 8);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(16, -10, 6, 5); ctx.fillRect(16, 5, 6, 5);
+
+    // 노란색 기절 ⚡ 및 반짝임 효과 연출
+    if(isStunned) {
+        ctx.strokeStyle = "#facc15"; // 노란색 테두리
+        ctx.lineWidth = 4;
+        ctx.strokeRect(-26, -16, 52, 32);
+
+        // 노랑 번개 아이콘 텍스트 표시
+        ctx.rotate(-angle); // 번개는 정방향으로 띄우기
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 24px Pretendard";
+        ctx.textAlign = "center";
+        ctx.fillText("⚡", 0, -22);
+    }
+
+    ctx.restore();
+}
+
 function draw() {
     ctx.clearRect(0, 0, 1200, 675);
-    let now = Date.now();
 
-    // 도로 배경
+    // 트랙 아스팔트
     ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 1200, 675);
 
-    // 넓어진 중앙 트랙 아일랜드
+    // 넓은 중앙 구조물
     ctx.fillStyle = "#1e293b";
     ctx.beginPath();
     ctx.roundRect(300, 150, 600, 375, 50);
@@ -219,7 +263,7 @@ function draw() {
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // 출발/결승선
+    // 결승선
     ctx.strokeStyle = "#facc15";
     ctx.lineWidth = 8;
     ctx.setLineDash([12, 12]);
@@ -228,35 +272,9 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // --- P1 차량 그리기 (기절 시 반짝거림 연출) ---
-    if(now > p1.stunUntil || Math.floor(now / 100) % 2 === 0) {
-        ctx.save();
-        ctx.translate(p1.x, p1.y);
-        let p1Angle = Math.atan2(p1.vy, p1.vx);
-        if(Math.hypot(p1.vx, p1.vy) < 0.1) p1Angle = 0;
-        ctx.rotate(p1Angle);
-        ctx.fillStyle = (now < p1.stunUntil) ? "#ef4444" : p1.color; // 기절 중이면 빨간 경고색
-        ctx.beginPath();
-        ctx.roundRect(-24, -14, 48, 28, 8);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(16, -10, 6, 5); ctx.fillRect(16, 5, 6, 5);
-        ctx.restore();
-    }
-
-    // --- P2 차량 그리기 ---
-    if(now > p2.stunUntil || Math.floor(now / 100) % 2 === 0) {
-        ctx.save();
-        ctx.translate(p2.x, p2.y);
-        let p2Angle = Math.atan2(p2.vy, p2.vx);
-        if(Math.hypot(p2.vx, p2.vy) < 0.1) p2Angle = 0;
-        ctx.rotate(p2Angle);
-        ctx.fillStyle = (now < p2.stunUntil) ? "#ef4444" : p2.color;
-        ctx.beginPath();
-        ctx.roundRect(-24, -14, 48, 28, 8);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(16, -10, 6, 5); ctx.fillRect(16, 5, 6, 5);
-        ctx.restore();
-    }
+    // 자동차 그리기
+    drawCar(p1);
+    drawCar(p2);
 }
 
 function loop() {
