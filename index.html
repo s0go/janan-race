@@ -1,291 +1,436 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jangan 2P Free-Move Racing</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-body {
-    margin: 0; min-height: 100vh; background: #090d16;
-    display: flex; justify-content: center; align-items: center; font-family: 'Pretendard', sans-serif;
-}
-#gameBox {
-    position: relative; width: min(1200px, 96vw); aspect-ratio: 16/9;
-    overflow: hidden; border: 3px solid rgba(250, 204, 21, 0.4); border-radius: 20px; background: #1e293b;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-}
-canvas { width: 100%; height: 100%; display: block; }
-#uiTop { 
-    position: absolute; top: 20px; left: 25px; right: 25px; display: flex; justify-content: space-between;
-    color: white; font-size: 22px; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,0.5); z-index: 5;
-}
-.p1-info { color: #38bdf8; }
-.p2-info { color: #f43f5e; }
-#menu { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(6px); background: rgba(0,0,0,0.6); }
-.panel { 
-    width: min(500px, 92%); padding: 30px; background: rgba(15, 23, 42, 0.95); 
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; color: white; text-align: center;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-}
-.panel h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; color: #facc15; letter-spacing: -1px; }
-.panel p { font-size: 14px; color: #94a3b8; margin: 0 0 20px; line-height: 1.5; }
-button { 
-    width: 100%; border: none; padding: 14px; border-radius: 12px; background: #facc15; color: #0f172a; 
-    font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(250,204,21,0.3);
-}
-button:hover { background: #fde047; transform: translateY(-1px); }
-
-/* 플레이어 컨트롤 선택 가이드 스타일 */
-.controls-guide { display: flex; gap: 12px; margin-bottom: 20px; text-align: center; }
-.p1-card { 
-    flex: 1; padding: 14px; border-radius: 16px; background: rgba(56, 189, 248, 0.15); 
-    border: 2px solid #38bdf8; color: #e0f2fe; 
-}
-.p2-card { 
-    flex: 1; padding: 14px; border-radius: 16px; background: rgba(244, 63, 94, 0.15); 
-    border: 2px solid #f43f5e; color: #ffe4e6; 
-}
-.card-title { font-weight: 800; font-size: 16px; margin-bottom: 6px; }
-.p1-card .card-title { color: #38bdf8; }
-.p2-card .card-title { color: #f43f5e; }
-.key-badge { display: inline-block; padding: 4px 8px; background: rgba(0,0,0,0.4); border-radius: 6px; font-weight: 700; font-size: 13px; margin-top: 4px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>장안고 축제 - 구불구불 커브 레이싱 4</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0f19;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #fff;
+        }
+        #game-container {
+            position: relative;
+            width: 440px;
+            height: 680px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            background: #111827;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.75);
+            padding: 12px 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hud-label {
+            font-size: 11px;
+            color: #94a3b8;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+        .hud-value {
+            font-size: 24px;
+            font-weight: 900;
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            font-family: monospace;
+        }
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 15, 25, 0.88);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            text-align: center;
+            padding: 30px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #00f0ff, #7000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        p {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00f0ff, #7000ff);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 25px rgba(0, 240, 255, 0.35);
+            transition: all 0.15s ease;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(0, 240, 255, 0.2);
+        }
+        .result-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .result-val {
+            font-weight: 800;
+            color: #ff0055;
+            font-family: monospace;
+            font-size: 18px;
+        }
+        .controls-hint {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .key-badge {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #00f0ff;
+        }
+    </style>
 </head>
 <body>
 
-<div id="gameBox">
-    <canvas id="game" width="1200" height="675"></canvas>
-    <div id="uiTop">
-        <div class="p1-info">P1 (파랑) LAP: <span id="p1Lap">1</span>/3</div>
-        <div class="p2-info">P2 (빨강) LAP: <span id="p2Lap">1</span>/3</div>
+<div id="game-container">
+    <canvas id="gameCanvas" width="440" height="680"></canvas>
+
+    <div class="ui-layer">
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">RECORD TIME</span>
+                <span id="time-display" class="hud-value">00.00s</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">SPEED</span>
+                <span id="speed-display" class="hud-value">0 KM/H</span>
+            </div>
+        </div>
     </div>
-    <div id="menu"></div>
+
+    <!-- 시작 화면 -->
+    <div id="start-screen" class="screen-overlay">
+        <h1>Jangan Racing 4</h1>
+        <p>구불구불 커브 서킷을 이탈하지 말고<br>최대한 오랫동안 버텨라!</p>
+        
+        <div class="controls-hint">
+            <span class="key-badge">◀ / A : 좌회전</span>
+            <span class="key-badge">▶ / D : 우회전</span>
+        </div>
+
+        <button class="btn" onclick="startGame()">레이스 시작</button>
+    </div>
+
+    <!-- 게임 오버 화면 -->
+    <div id="gameover-screen" class="screen-overlay hidden">
+        <h1 style="background: linear-gradient(135deg, #ff0055, #ff5500); -webkit-background-clip: text;">CRASHED!</h1>
+        <p>코스를 이탈하거나 가드레일에 충돌했습니다!</p>
+        
+        <div class="result-box">
+            <div class="result-row">
+                <span>기록 시간:</span>
+                <span id="final-time" class="result-val">00.00초</span>
+            </div>
+            <div class="result-row">
+                <span>주행 거리:</span>
+                <span id="final-dist" class="result-val" style="color: #00f0ff;">0m</span>
+            </div>
+        </div>
+        <button class="btn" onclick="startGame()">다시 도전</button>
+    </div>
 </div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const p1LapEl = document.getElementById("p1Lap");
-const p2LapEl = document.getElementById("p2Lap");
-const menu = document.getElementById("menu");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-let state = "START";
+const timeDisplay = document.getElementById('time-display');
+const speedDisplay = document.getElementById('speed-display');
+const startScreen = document.getElementById('start-screen');
+const gameoverScreen = document.getElementById('gameover-screen');
+const finalTime = document.getElementById('final-time');
+const finalDist = document.getElementById('final-dist');
 
-let p1 = { x: 180, y: 220, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#38bdf8", name: "PLAYER 1 (파랑)", stunUntil: 0 };
-let p2 = { x: 180, y: 450, vx: 0, vy: 0, speed: 0.4, friction: 0.93, maxSpeed: 7, lap: 1, color: "#f43f5e", name: "PLAYER 2 (빨강)", stunUntil: 0 };
+let gameState = 'START';
+let startTime = 0;
+let elapsedTime = 0;
+let animationFrameId;
 
-let keys = {};
-window.addEventListener("keydown", e => { keys[e.code] = true; });
-window.addEventListener("keyup", e => { keys[e.code] = false; });
+// 조작 상태
+const keys = { Left: false, Right: false };
 
-function showMenu(winnerName = "") {
-    menu.style.display = "flex";
-    if(state === "START") {
-        menu.innerHTML = `
-            <div class="panel">
-                <h1>🏎️ JANGAN 2P CIRCUIT</h1>
-                <p>벽에 박으면 1초, 서로 박으면 1.5초 기절(노랑 ⚡)!<br>각자 조종할 플레이어를 확인하세요.</p>
-                
-                <div class="controls-guide">
-                    <div class="p1-card">
-                        <div class="card-title">🟦 P1 (파랑)</div>
-                        <div class="key-badge">W A S D</div>
-                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">상 / 좌 / 하 / 우</div>
-                    </div>
-                    <div class="p2-card">
-                        <div class="card-title">🟥 P2 (빨강)</div>
-                        <div class="key-badge">↑ ← ↓ →</div>
-                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">방향키 (상하좌우)</div>
-                    </div>
-                </div>
+// 차량 설정
+const car = {
+    x: 220,
+    y: 520,
+    width: 26,
+    height: 48,
+    speed: 7.5,
+    driftSpeed: 5.2
+};
 
-                <button onclick="startGame()">레이스 시작!</button>
-            </div>
-        `;
-    } else {
-        menu.innerHTML = `
-            <div class="panel">
-                <h1>🏆 최종 승리!</h1>
-                <p style="font-size:22px; color:#facc15; font-weight:700; margin:15px 0;">${winnerName} 승리!</p>
-                <button onclick="startGame()">다시 레이스</button>
-            </div>
-        `;
-    }
+// 도로 커브 파라미터 (구불구불 맵 구현)
+let mapOffset = 0;
+const roadWidth = 170; // 도로 폭
+
+// 사인파 조합으로 구불구불한 트랙의 중심 X좌표 반환
+function getRoadCenter(y) {
+    const worldY = mapOffset + y;
+    return 220 
+        + Math.sin(worldY * 0.006) * 110 
+        + Math.sin(worldY * 0.015) * 50
+        + Math.cos(worldY * 0.003) * 30;
 }
+
+// 키 입력 이벤트
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.Left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.Right = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.Left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.Right = false;
+});
+
+// 터치 조작 지원 (모바일/마우스)
+let touchStartX = 0;
+canvas.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+    if (gameState !== 'PLAYING') return;
+    const touchX = e.touches[0].clientX;
+    const diff = touchX - touchStartX;
+    if (diff < -10) { keys.Left = true; keys.Right = false; }
+    else if (diff > 10) { keys.Right = true; keys.Left = false; }
+    else { keys.Left = false; keys.Right = false; }
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => {
+    keys.Left = false;
+    keys.Right = false;
+});
 
 function startGame() {
-    menu.style.display = "none";
-    p1.x = 180; p1.y = 220; p1.vx = 0; p1.vy = 0; p1.lap = 1; p1.stunUntil = 0;
-    p2.x = 180; p2.y = 450; p2.vx = 0; p2.vy = 0; p2.lap = 1; p2.stunUntil = 0;
-    state = "PLAYING";
+    car.x = 220;
+    mapOffset = 0;
+    startTime = Date.now();
+    elapsedTime = 0;
+    keys.Left = false;
+    keys.Right = false;
+
+    timeDisplay.innerText = '00.00s';
+    speedDisplay.innerText = '180 KM/H';
+
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+
+    gameState = 'PLAYING';
+
+    cancelAnimationFrame(animationFrameId);
+    gameLoop();
 }
 
-function triggerStun(car, duration, bounceX, bounceY) {
-    let now = Date.now();
-    car.stunUntil = now + duration;
-    car.vx = 0; 
-    car.vy = 0;
-    // 끼임 방지를 위해 부딪힌 방향 반대로 튕겨냄
-    car.x += bounceX;
-    car.y += bounceY;
+function gameOver() {
+    gameState = 'GAMEOVER';
+    const seconds = (elapsedTime / 1000).toFixed(2);
+    const distance = Math.floor(mapOffset * 0.4);
+    
+    finalTime.innerText = `${seconds}초`;
+    finalDist.innerText = `${distance}m`;
+    gameoverScreen.classList.remove('hidden');
 }
 
 function update() {
-    if(state !== "PLAYING") return;
+    if (gameState !== 'PLAYING') return;
 
-    let now = Date.now();
+    // 시간 측정 (ms 단위)
+    elapsedTime = Date.now() - startTime;
+    timeDisplay.innerText = `${(elapsedTime / 1000).toFixed(2)}s`;
 
-    // --- P1 조작 ---
-    if(now > p1.stunUntil) {
-        if(keys["KeyW"]) p1.vy -= p1.speed;
-        if(keys["KeyS"]) p1.vy += p1.speed;
-        if(keys["KeyA"]) p1.vx -= p1.speed;
-        if(keys["KeyD"]) p1.vx += p1.speed;
+    // 시간에 따라 조금각 속도 증가
+    const currentSpeed = car.speed + (elapsedTime / 10000);
+    speedDisplay.innerText = `${Math.floor(currentSpeed * 24)} KM/H`;
+
+    // 차량 이동
+    if (keys.Left) car.x -= car.driftSpeed;
+    if (keys.Right) car.x += car.driftSpeed;
+
+    // 트랙 진행 (화면이 아래로 내려감)
+    mapOffset += currentSpeed;
+
+    // 현재 차 위치에서의 도로 중심값 및 좌우 가드레일 경계값
+    const roadCenter = getRoadCenter(car.y);
+    const leftBoundary = roadCenter - (roadWidth / 2);
+    const rightBoundary = roadCenter + (roadWidth / 2);
+
+    // 충돌 판정 (차량이 도로 밖으로 완전히 벗어나면 crash)
+    const carLeft = car.x - (car.width / 2);
+    const carRight = car.x + (car.width / 2);
+
+    if (carLeft < leftBoundary || carRight > rightBoundary) {
+        gameOver();
     }
+}
 
-    // --- P2 조작 ---
-    if(now > p2.stunUntil) {
-        if(keys["ArrowUp"]) p2.vy -= p2.speed;
-        if(keys["ArrowDown"]) p2.vy += p2.speed;
-        if(keys["ArrowLeft"]) p2.vx -= p2.speed;
-        if(keys["ArrowRight"]) p2.vx += p2.speed;
-    }
+function draw() {
+    // 잔디/외곽 배경
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 마찰력 및 위치 이동
-    p1.vx *= p1.friction; p1.vy *= p1.friction;
-    p2.vx *= p2.friction; p2.vy *= p2.friction;
+    // 구불구불한 아스팔트 도로 그리기
+    for (let y = 0; y < canvas.height; y += 4) {
+        const roadCenter = getRoadCenter(y);
+        const left = roadCenter - (roadWidth / 2);
 
-    p1.x += p1.vx; p1.y += p1.vy;
-    p2.x += p2.vx; p2.y += p2.vy;
+        // 아스팔트 본체
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(left, y, roadWidth, 4);
 
-    // --- 1. 외곽 벽 충돌 (1초 기절 + 반사 튕김) ---
-    const minX = 40, maxX = 1160, minY = 80, maxY = 635;
-    
-    [p1, p2].forEach(car => {
-        if(car.x < minX) triggerStun(car, 1000, 15, 0);
-        if(car.x > maxX) triggerStun(car, 1000, -15, 0);
-        if(car.y < minY) triggerStun(car, 1000, 0, 15);
-        if(car.y > maxY) triggerStun(car, 1000, 0, -15);
-    });
+        // 연석/가드레일 (빨강/흰색 체크 패턴)
+        const isRed = Math.floor((mapOffset + y) / 20) % 2 === 0;
+        ctx.fillStyle = isRed ? '#ff0055' : '#ffffff';
+        ctx.fillRect(left - 8, y, 8, 4);
+        ctx.fillRect(left + roadWidth, y, 8, 4);
 
-    // --- 2. 중앙 섬 충돌 (1초 기절 + 밀쳐내기 튕김) ---
-    const inner = { x: 300, y: 150, w: 600, h: 375 };
-    [p1, p2].forEach(car => {
-        if(car.x > inner.x && car.x < inner.x + inner.w && car.y > inner.y && car.y < inner.y + inner.h) {
-            // 어느 쪽으로 들어왔는지 계산해서 튕겨냄
-            let dxLeft = Math.abs(car.x - inner.x);
-            let dxRight = Math.abs(car.x - (inner.x + inner.w));
-            let dyTop = Math.abs(car.y - inner.y);
-            let dyBottom = Math.abs(car.y - (inner.y + inner.h));
-            let minDist = Math.min(dxLeft, dxRight, dyTop, dyBottom);
-
-            if(minDist === dxLeft) triggerStun(car, 1000, -15, 0);
-            else if(minDist === dxRight) triggerStun(car, 1000, 15, 0);
-            else if(minDist === dyTop) triggerStun(car, 1000, 0, -15);
-            else triggerStun(car, 1000, 0, 15);
+        // 도로 중앙 점선
+        if (Math.floor((mapOffset + y) / 30) % 2 === 0) {
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(roadCenter - 2, y, 4, 4);
         }
-    });
-
-    // --- 3. 서로 충돌 (1.5초 기절 + 밀쳐내기) ---
-    let distBetween = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-    if(distBetween < 42) {
-        let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        triggerStun(p1, 1500, -Math.cos(angle) * 15, -Math.sin(angle) * 15);
-        triggerStun(p2, 1500, Math.cos(angle) * 15, Math.sin(angle) * 15);
     }
 
-    p1LapEl.textContent = p1.lap;
-    p2LapEl.textContent = p2.lap;
-
-    if(p1.lap > 3) { state = "GAMEOVER"; showMenu(p1.name); }
-    if(p2.lap > 3) { state = "GAMEOVER"; showMenu(p2.name); }
-}
-
-let p1Passed = false;
-let p2Passed = false;
-
-function checkLaps() {
-    if(state !== "PLAYING") return;
-    if(p1.x > 950) p1Passed = true;
-    if(p1Passed && p1.x < 250) { p1.lap++; p1Passed = false; }
-
-    if(p2.x > 950) p2Passed = true;
-    if(p2Passed && p2.x < 250) { p2.lap++; p2Passed = false; }
-}
-
-function drawCar(car) {
-    let now = Date.now();
-    let isStunned = now < car.stunUntil;
-
+    // 레이싱 카 그리기
     ctx.save();
     ctx.translate(car.x, car.y);
-    let angle = Math.atan2(car.vy, car.vx);
-    if(Math.hypot(car.vx, car.vy) < 0.1) angle = 0;
-    ctx.rotate(angle);
 
-    // 차 본체
-    ctx.fillStyle = car.color;
+    // 조향 각도 연출
+    let steerAngle = 0;
+    if (keys.Left) steerAngle = -0.15;
+    if (keys.Right) steerAngle = 0.15;
+    ctx.rotate(steerAngle);
+
+    // 차체 그림자
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(-car.width / 2 + 4, -car.height / 2 + 6, car.width, car.height);
+
+    // 바퀴 4개
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-car.width / 2 - 2, -car.height / 2 + 6, 4, 10); // 전좌
+    ctx.fillRect(car.width / 2 - 2, -car.height / 2 + 6, 4, 10);  // 전우
+    ctx.fillRect(-car.width / 2 - 2, car.height / 2 - 16, 4, 10); // 후좌
+    ctx.fillRect(car.width / 2 - 2, car.height / 2 - 16, 4, 10);  // 후우
+
+    // 메인 스포츠카 바디 (스포츠 레드)
+    ctx.fillStyle = '#ff0055';
     ctx.beginPath();
-    ctx.roundRect(-24, -14, 48, 28, 8);
+    ctx.roundRect(-car.width / 2, -car.height / 2, car.width, car.height, 6);
     ctx.fill();
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(16, -10, 6, 5); ctx.fillRect(16, 5, 6, 5);
 
-    // 노란색 기절 ⚡ 및 반짝임 효과 연출
-    if(isStunned) {
-        ctx.strokeStyle = "#facc15"; // 노란색 테두리
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-26, -16, 52, 32);
+    // 유선형 데칼 (스포츠 라인)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2, -car.height / 2, 4, car.height);
 
-        // 노랑 번개 아이콘 텍스트 표시
-        ctx.rotate(-angle); // 번개는 정방향으로 띄우기
-        ctx.fillStyle = "#facc15";
-        ctx.font = "bold 24px Pretendard";
-        ctx.textAlign = "center";
-        ctx.fillText("⚡", 0, -22);
-    }
+    // 앞/뒤 유리창
+    ctx.fillStyle = '#00f0ff';
+    ctx.fillRect(-car.width / 2 + 4, -car.height / 2 + 12, car.width - 8, 10); // 앞유리
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(-car.width / 2 + 5, car.height / 2 - 14, car.width - 10, 6);  // 뒷유리
+
+    // 헤드라이트 (네온 옐로우)
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-car.width / 2 + 2, -car.height / 2, 5, 3);
+    ctx.fillRect(car.width / 2 - 7, -car.height / 2, 5, 3);
 
     ctx.restore();
 }
 
-function draw() {
-    ctx.clearRect(0, 0, 1200, 675);
-
-    // 트랙 아스팔트
-    ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 1200, 675);
-
-    // 넓은 중앙 구조물
-    ctx.fillStyle = "#1e293b";
-    ctx.beginPath();
-    ctx.roundRect(300, 150, 600, 375, 50);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    // 결승선
-    ctx.strokeStyle = "#facc15";
-    ctx.lineWidth = 8;
-    ctx.setLineDash([12, 12]);
-    ctx.beginPath();
-    ctx.moveTo(250, 100); ctx.lineTo(250, 270);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 자동차 그리기
-    drawCar(p1);
-    drawCar(p2);
-}
-
-function loop() {
+function gameLoop() {
     update();
-    checkLaps();
     draw();
-    requestAnimationFrame(loop);
+    if (gameState === 'PLAYING') {
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
 }
 
-showMenu();
-loop();
+// 초기 1회 렌더링
+draw();
 </script>
+
 </body>
 </html>
